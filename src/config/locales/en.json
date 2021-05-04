@@ -1,0 +1,26 @@
+{
+  "VALIDATE": {
+    "INVALID": "'%s' is invalid.",
+    "NOTFOUND": "'%s' not found.",
+    "REQUIRED": "'%s' cannot be empty.",
+    "ARRAY": "'%s' must be an array.",
+    "UNACCEPTED": "'%s' is not matching with one of the following values: {{accepted_value}}.",
+    "MIN_STRING": "'%s' should not be shorter than {{min_value}} characters.",
+    "MAX_STRING": "'%s' should not be longer than {{max_value}} characters.",
+    "MIN_NUMBER": "'%s' should not be less than {{min_value}}.",
+    "MAX_NUMBER": "'%s' should not be greater than {{max_value}}.",
+    "MIN_ARRAY": "The item of '%s' should not be fewer than {{min_value}}.",
+    "MAX_ARRAY": "The item of '%s' should not be more than {{max_value}}.",
+    "INVALID_DATE_FORMAT": "'%s' should be follow ISO8601",
+    "INVALID_AND": "{{missing}} should not be empty when filtering with {{present}}.",
+    "INVALID_FEATURE_DATE": "Feature expired date cannot be empty when setting up feature.",
+    "DATE_FROM_GT_DATE_TO": "Start date should be greater than end date.",
+    "EMPTY_ARRAY": "Do not pass an empty array."
+  },
+  "COMMON": {
+    "DUPLICATE": "'%s' has been used!"
+  },
+  "ORDER": {
+    "NOT_FOUND": "Order not found!"
+  }
+}

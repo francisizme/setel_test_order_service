@@ -1,0 +1,16 @@
+{
+  "type": "mysql",
+  "host": "localhost",
+  "port": 3306,
+  "username": "nestjs",
+  "password": "123456789",
+  "database": "test_mcs_order",
+  "entities": [
+    "dist/**/entities/*.entity.js"
+  ],
+  "migrationsTableName": "migrations",
+  "migrations": ["dist/database/migration/*.js"],
+  "cli": {
+    "migrationsDir": "database/migration"
+  }
+}

@@ -1,9 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import {
+  BadRequestException,
+  NotAcceptableException,
+  NotFoundException,
+} from '@nestjs/common';
+import { getQueueToken } from '@nestjs/bull';
 import { Repository } from 'typeorm';
 import * as faker from 'faker';
 import * as i18n from 'i18n';
 import * as path from 'path';
+import { Queue } from 'bull';
 
 import { OrderService } from './order.service';
 
@@ -12,8 +19,8 @@ import { OrderTransaction } from './entities/transaction.entity';
 
 import { IOrder, IOrderCreate } from './interfaces/order.interface';
 import { ITransaction } from './interfaces/transaction.interface';
+
 import { EOrderState, EPaymentType } from '../../utils/enum';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { commonMessage, orderMessage } from '../../utils/localeUtils';
 
 class OrderTransactionRepositoryFake {
@@ -25,10 +32,15 @@ class OrderRepositoryFake {
   async findOne(): Promise<void> {}
 }
 
+class OrderQueueFake {
+  async add(): Promise<void> {}
+}
+
 describe('OrderService', () => {
   let service: OrderService;
   let orderRepository: Repository<IOrder>;
   let transactionRepository: Repository<ITransaction>;
+  let orderQueue: Queue;
 
   beforeEach(async () => {
     i18n.configure({
@@ -47,6 +59,10 @@ describe('OrderService', () => {
           provide: getRepositoryToken(OrderTransaction),
           useClass: OrderTransactionRepositoryFake,
         },
+        {
+          provide: getQueueToken('order'),
+          useClass: OrderQueueFake,
+        },
       ],
     }).compile();
 
@@ -55,6 +71,7 @@ describe('OrderService', () => {
     transactionRepository = module.get<Repository<ITransaction>>(
       getRepositoryToken(OrderTransaction),
     );
+    orderQueue = module.get<Queue>(getQueueToken('order'));
   });
 
   it('should be defined', () => {
@@ -122,6 +139,7 @@ describe('OrderService', () => {
     const orderFindOneSpy = jest
       .spyOn(orderRepository, 'findOne')
       .mockResolvedValue(mockedOrder);
+    const orderSaveSpy = jest.spyOn(orderRepository, 'save');
 
     try {
       await service.create(orderInput);
@@ -135,6 +153,8 @@ describe('OrderService', () => {
         commonMessage('en', 'DUPLICATE', 'code'),
       );
     }
+
+    expect(orderSaveSpy).not.toHaveBeenCalled();
   });
 
   it('should return an Order by order ID', async () => {
@@ -198,21 +218,241 @@ describe('OrderService', () => {
   });
 
   it('should return not found when Order is not exist', async () => {
-    jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
+    const orderFindOneSpy = jest
+      .spyOn(orderRepository, 'findOne')
+      .mockResolvedValue(null);
+    const orderId = 1;
 
     try {
-      await service.get(1);
+      await service.get(orderId);
     } catch (e) {
       expect(e).toBeInstanceOf(NotFoundException);
       expect(e).toHaveProperty('message', orderMessage('en', 'NOT_FOUND'));
     }
+
+    expect(orderFindOneSpy).toHaveBeenCalledWith({
+      where: [{ id: orderId }, { code: orderId }],
+      relations: ['transactions'],
+    });
   });
 
-  it('should update status of an Order', () => {});
+  it('should update state of an Order', async () => {
+    const orderId = 1;
+    const d = new Date();
+    const mockedOrder: IOrder = {
+      id: orderId,
+      code: faker.git.shortSha(),
+      user_id: 1,
+      created_at: d,
+      updated_at: d,
+      transactions: [
+        {
+          id: 1,
+          state: EOrderState.created,
+          created_at: d,
+        } as ITransaction,
+      ],
+    };
+    const orderFindOneSpy = jest
+      .spyOn(orderRepository, 'findOne')
+      .mockResolvedValue(mockedOrder);
+    const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
 
-  it('should cancel an Order', () => {});
+    await service.updateState(orderId, EOrderState.cancelled);
 
-  it('should check status of an Order', () => {});
+    expect(orderFindOneSpy).toHaveBeenCalledWith({
+      where: { id: orderId },
+      relations: ['transactions'],
+    });
+    expect(transactionSaveSpy).toHaveBeenCalledWith({
+      order: mockedOrder,
+      state: EOrderState.cancelled,
+    });
+  });
 
-  it('should check if the Order is delivered', () => {});
+  it('should return error if updating state for non-exist Order', async () => {
+    const orderFindOneSpy = jest
+      .spyOn(orderRepository, 'findOne')
+      .mockResolvedValue(null);
+    const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
+    const orderId = 1;
+
+    try {
+      await service.updateState(orderId, EOrderState.cancelled);
+    } catch (e) {
+      expect(e).toBeInstanceOf(NotFoundException);
+      expect(e).toHaveProperty('message', orderMessage('en', 'NOT_FOUND'));
+    }
+
+    expect(orderFindOneSpy).toHaveBeenCalledWith({
+      where: { id: orderId },
+      relations: ['transactions'],
+    });
+    expect(transactionSaveSpy).not.toHaveBeenCalled();
+  });
+
+  it('should return error if updating a delivered Order', async () => {
+    const orderId = 1;
+    const d = new Date();
+    const mockedOrder: IOrder = {
+      id: orderId,
+      code: faker.git.shortSha(),
+      user_id: 1,
+      created_at: d,
+      updated_at: d,
+      transactions: [
+        {
+          id: 1,
+          state: EOrderState.delivered,
+          created_at: d,
+        } as ITransaction,
+      ],
+    };
+    const orderFindOneSpy = jest
+      .spyOn(orderRepository, 'findOne')
+      .mockResolvedValue(mockedOrder);
+    const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
+
+    try {
+      await service.updateState(orderId, EOrderState.cancelled);
+    } catch (e) {
+      expect(e).toBeInstanceOf(NotAcceptableException);
+      expect(e).toHaveProperty(
+        'message',
+        orderMessage('en', 'NOT_ALLOWED_TO_UPDATE_DELIVERED'),
+      );
+    }
+    expect(orderFindOneSpy).toHaveBeenCalledWith({
+      where: { id: orderId },
+      relations: ['transactions'],
+    });
+    expect(transactionSaveSpy).not.toHaveBeenCalled();
+  });
+
+  it('should return error if updating a cancelled Order', async () => {
+    const orderId = 1;
+    const d = new Date();
+    const mockedOrder: IOrder = {
+      id: orderId,
+      code: faker.git.shortSha(),
+      user_id: 1,
+      created_at: d,
+      updated_at: d,
+      transactions: [
+        {
+          id: 1,
+          state: EOrderState.cancelled,
+          created_at: d,
+        } as ITransaction,
+      ],
+    };
+    const orderFindOneSpy = jest
+      .spyOn(orderRepository, 'findOne')
+      .mockResolvedValue(mockedOrder);
+    const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
+    const orderQueueSpy = jest.spyOn(orderQueue, 'add');
+
+    try {
+      await service.updateState(orderId, EOrderState.confirmed);
+    } catch (e) {
+      expect(e).toBeInstanceOf(NotAcceptableException);
+      expect(e).toHaveProperty(
+        'message',
+        orderMessage('en', 'NOT_ALLOWED_TO_UPDATE_CANCELLED'),
+      );
+    }
+    expect(orderFindOneSpy).toHaveBeenCalledWith({
+      where: { id: orderId },
+      relations: ['transactions'],
+    });
+    expect(transactionSaveSpy).not.toHaveBeenCalled();
+    expect(orderQueueSpy).not.toHaveBeenCalled();
+  });
+
+  it('should check state of an Order', async () => {
+    const orderId = 1;
+    const d = new Date();
+    const mockedState: ITransaction = {
+      id: 1,
+      state: EOrderState.cancelled,
+      created_at: d,
+    } as ITransaction;
+    const mockedOrder: IOrder = {
+      id: orderId,
+      code: faker.git.shortSha(),
+      created_at: d,
+      updated_at: d,
+      user_id: 1,
+      transactions: [mockedState],
+    };
+    const orderFindOneSpy = jest
+      .spyOn(orderRepository, 'findOne')
+      .mockResolvedValue(mockedOrder);
+
+    const state = await service.checkState(orderId);
+
+    expect(orderFindOneSpy).toHaveBeenCalledWith({
+      where: { id: orderId },
+      relations: ['transactions'],
+    });
+    expect(state).toStrictEqual({
+      ...mockedState,
+      state_text: EOrderState[mockedState.state],
+    });
+  });
+
+  it('should return error if checking state of a non-exist Order', async () => {
+    const orderId = 1;
+    const orderFindOneSpy = jest
+      .spyOn(orderRepository, 'findOne')
+      .mockResolvedValue(null);
+
+    try {
+      await service.checkState(orderId);
+    } catch (e) {
+      expect(e).toBeInstanceOf(NotFoundException);
+      expect(e).toHaveProperty('message', orderMessage('en', 'NOT_FOUND'));
+    }
+
+    expect(orderFindOneSpy).toHaveBeenCalledWith({
+      where: { id: orderId },
+      relations: ['transactions'],
+    });
+  });
+
+  it('should deliver the Order after a certain of seconds', async () => {
+    const orderId = 1;
+    const d = new Date();
+    const mockedOrder: IOrder = {
+      id: orderId,
+      code: faker.git.shortSha(),
+      user_id: 1,
+      created_at: d,
+      updated_at: d,
+      transactions: [
+        {
+          id: 1,
+          state: EOrderState.created,
+          created_at: d,
+        } as ITransaction,
+      ],
+    };
+    const orderFindOneSpy = jest
+      .spyOn(orderRepository, 'findOne')
+      .mockResolvedValue(mockedOrder);
+    const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
+    const addQueueSpy = jest.spyOn(orderQueue, 'add');
+
+    await service.updateState(orderId, EOrderState.confirmed);
+
+    expect(orderFindOneSpy).toHaveBeenCalledWith({
+      where: { id: orderId },
+      relations: ['transactions'],
+    });
+    expect(transactionSaveSpy).toHaveBeenCalledWith({
+      order: mockedOrder,
+      state: EOrderState.confirmed,
+    });
+    expect(addQueueSpy).toHaveBeenCalledWith(mockedOrder, { delay: 5000 });
+  });
 });

@@ -22,18 +22,14 @@ export class OrderController {
   ) {}
 
   @Get(':orderId([0-9]+)')
-  async checkState(
-    @Param('orderId') orderId: number,
-  ): Promise<ITransactionDetails> {
+  async checkState(@Param('orderId') orderId: number): Promise<ITransactionDetails> {
     return this.orderService.checkState(orderId);
   }
 
   @Post()
   @UsePipes(new JoiValidationPipe(OrderCreateSchema, 'body'))
   async create(@Body() input: IOrderCreate): Promise<IOrder> {
-    const user: IUser = await this.authClient
-      .send('verifyToken', input.user_token)
-      .toPromise();
+    const user: IUser = await this.authClient.send('verifyToken', input.user_token).toPromise();
 
     if (!user) {
       throw new BadRequestException(orderMessage('en', 'INVALID_TOKEN'));
@@ -59,10 +55,7 @@ export class OrderController {
     return this.orderService.updateState(orderId, EOrderState.confirmed);
   }
 
-  private async _performPayment(
-    order: IOrder,
-    orderCreateInfo: IOrderCreate,
-  ): Promise<void> {
+  private async _performPayment(order: IOrder, orderCreateInfo: IOrderCreate): Promise<void> {
     const isPaid = await this.paymentClient
       .send('pay', {
         order_id: order.id,
@@ -71,9 +64,6 @@ export class OrderController {
       })
       .toPromise();
 
-    await this.orderService.updateState(
-      order.id,
-      isPaid ? EOrderState.confirmed : EOrderState.cancelled,
-    );
+    await this.orderService.updateState(order.id, isPaid ? EOrderState.confirmed : EOrderState.cancelled);
   }
 }

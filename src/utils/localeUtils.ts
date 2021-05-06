@@ -33,12 +33,7 @@ const supportLanguage = ['en'];
  * @param {object} nameValued
  * @returns {string}
  */
-const localeMessage = function (
-  lang: string,
-  phrase: string,
-  annotationValue?: any,
-  nameValued?: any,
-): string {
+const localeMessage = function (lang: string, phrase: string, annotationValue?: any, nameValued?: any): string {
   if (supportLanguage.indexOf(lang) < 0) {
     lang = 'en';
   }
@@ -59,20 +54,10 @@ export const validateMessage = function (
   annotationValue?: any,
   nameValued?: any,
 ): string {
-  return localeMessage(
-    lang,
-    'VALIDATE.' + message,
-    annotationValue,
-    nameValued,
-  );
+  return localeMessage(lang, 'VALIDATE.' + message, annotationValue, nameValued);
 };
 
-export const commonMessage = function (
-  lang: string,
-  message: string,
-  annotationValue?: any,
-  nameValued?: any,
-): string {
+export const commonMessage = function (lang: string, message: string, annotationValue?: any, nameValued?: any): string {
   return localeMessage(lang, 'COMMON.' + message, annotationValue, nameValued);
 };
 

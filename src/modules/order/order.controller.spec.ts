@@ -101,29 +101,16 @@ describe('OrderController', () => {
       created_at: d,
       updated_at: d,
     };
-    const authClientSendSpy = jest
-      .spyOn(authClient, 'send')
-      .mockReturnValue(authObserver);
-    const authClientPromiseSpy = jest
-      .spyOn(authObserver, 'toPromise')
-      .mockResolvedValue(mockedUser);
-    const paymentClientSendSpy = jest
-      .spyOn(paymentClient, 'send')
-      .mockReturnValue(paymentObserver);
-    const paymentClientPromiseSpy = jest
-      .spyOn(paymentObserver, 'toPromise')
-      .mockResolvedValue(true);
+    const authClientSendSpy = jest.spyOn(authClient, 'send').mockReturnValue(authObserver);
+    const authClientPromiseSpy = jest.spyOn(authObserver, 'toPromise').mockResolvedValue(mockedUser);
+    const paymentClientSendSpy = jest.spyOn(paymentClient, 'send').mockReturnValue(paymentObserver);
+    const paymentClientPromiseSpy = jest.spyOn(paymentObserver, 'toPromise').mockResolvedValue(true);
     const updateStateSpy = jest.spyOn(service, 'updateState');
-    const serviceCreateSpy = jest
-      .spyOn(service, 'create')
-      .mockResolvedValue(mockedOrder);
+    const serviceCreateSpy = jest.spyOn(service, 'create').mockResolvedValue(mockedOrder);
 
     const order = await controller.create(input);
 
-    expect(authClientSendSpy).toHaveBeenCalledWith(
-      'verifyToken',
-      input.user_token,
-    );
+    expect(authClientSendSpy).toHaveBeenCalledWith('verifyToken', input.user_token);
     expect(authClientPromiseSpy).toHaveBeenCalled();
     expect(serviceCreateSpy).toHaveBeenCalledWith({
       ...input,
@@ -135,10 +122,7 @@ describe('OrderController', () => {
       payment_type: input.payment_type,
     });
     expect(paymentClientPromiseSpy).toHaveBeenCalled();
-    expect(updateStateSpy).toHaveBeenCalledWith(
-      mockedOrder.id,
-      EOrderState.confirmed,
-    );
+    expect(updateStateSpy).toHaveBeenCalledWith(mockedOrder.id, EOrderState.confirmed);
     expect(order).toBe(mockedOrder);
   });
 
@@ -165,29 +149,16 @@ describe('OrderController', () => {
       created_at: d,
       updated_at: d,
     };
-    const authClientSendSpy = jest
-      .spyOn(authClient, 'send')
-      .mockReturnValue(authObserver);
-    const authClientPromiseSpy = jest
-      .spyOn(authObserver, 'toPromise')
-      .mockResolvedValue(mockedUser);
-    const paymentClientSendSpy = jest
-      .spyOn(paymentClient, 'send')
-      .mockReturnValue(paymentObserver);
-    const paymentClientPromiseSpy = jest
-      .spyOn(paymentObserver, 'toPromise')
-      .mockResolvedValue(false);
+    const authClientSendSpy = jest.spyOn(authClient, 'send').mockReturnValue(authObserver);
+    const authClientPromiseSpy = jest.spyOn(authObserver, 'toPromise').mockResolvedValue(mockedUser);
+    const paymentClientSendSpy = jest.spyOn(paymentClient, 'send').mockReturnValue(paymentObserver);
+    const paymentClientPromiseSpy = jest.spyOn(paymentObserver, 'toPromise').mockResolvedValue(false);
     const updateStateSpy = jest.spyOn(service, 'updateState');
-    const serviceCreateSpy = jest
-      .spyOn(service, 'create')
-      .mockResolvedValue(mockedOrder);
+    const serviceCreateSpy = jest.spyOn(service, 'create').mockResolvedValue(mockedOrder);
 
     const order = await controller.create(input);
 
-    expect(authClientSendSpy).toHaveBeenCalledWith(
-      'verifyToken',
-      input.user_token,
-    );
+    expect(authClientSendSpy).toHaveBeenCalledWith('verifyToken', input.user_token);
     expect(authClientPromiseSpy).toHaveBeenCalled();
     expect(serviceCreateSpy).toHaveBeenCalledWith({
       ...input,
@@ -199,10 +170,7 @@ describe('OrderController', () => {
       payment_type: input.payment_type,
     });
     expect(paymentClientPromiseSpy).toHaveBeenCalled();
-    expect(updateStateSpy).toHaveBeenCalledWith(
-      mockedOrder.id,
-      EOrderState.cancelled,
-    );
+    expect(updateStateSpy).toHaveBeenCalledWith(mockedOrder.id, EOrderState.cancelled);
     expect(order).toBe(mockedOrder);
   });
 
@@ -213,15 +181,9 @@ describe('OrderController', () => {
       payment_type: EPaymentType.cash,
       user_token: faker.git.shortSha(),
     };
-    const authClientSendSpy = jest
-      .spyOn(authClient, 'send')
-      .mockReturnValue(authObserver);
-    const authClientPromiseSpy = jest
-      .spyOn(authObserver, 'toPromise')
-      .mockResolvedValue(null);
-    const paymentClientSendSpy = jest
-      .spyOn(paymentClient, 'send')
-      .mockReturnValue(paymentObserver);
+    const authClientSendSpy = jest.spyOn(authClient, 'send').mockReturnValue(authObserver);
+    const authClientPromiseSpy = jest.spyOn(authObserver, 'toPromise').mockResolvedValue(null);
+    const paymentClientSendSpy = jest.spyOn(paymentClient, 'send').mockReturnValue(paymentObserver);
     const paymentClientPromiseSpy = jest.spyOn(paymentObserver, 'toPromise');
     const serviceCreateSpy = jest.spyOn(service, 'create');
 
@@ -232,10 +194,7 @@ describe('OrderController', () => {
       expect(e).toHaveProperty('message', orderMessage('en', 'INVALID_TOKEN'));
     }
 
-    expect(authClientSendSpy).toHaveBeenCalledWith(
-      'verifyToken',
-      input.user_token,
-    );
+    expect(authClientSendSpy).toHaveBeenCalledWith('verifyToken', input.user_token);
     expect(authClientPromiseSpy).toHaveBeenCalled();
     expect(paymentClientPromiseSpy).not.toHaveBeenCalled();
     expect(paymentClientSendSpy).not.toHaveBeenCalled();
@@ -251,9 +210,7 @@ describe('OrderController', () => {
       id: 1,
       state_text: EOrderState[EOrderState.cancelled],
     };
-    const checkStateSpy = jest
-      .spyOn(service, 'checkState')
-      .mockResolvedValue(mockedState);
+    const checkStateSpy = jest.spyOn(service, 'checkState').mockResolvedValue(mockedState);
 
     const state = await controller.checkState(orderId);
 

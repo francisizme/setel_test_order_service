@@ -1,10 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  BadRequestException,
-  NotAcceptableException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotAcceptableException, NotFoundException } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bull';
 import { Repository } from 'typeorm';
 import * as faker from 'faker';
@@ -69,9 +65,7 @@ describe('OrderService', () => {
 
     service = module.get<OrderService>(OrderService);
     orderRepository = module.get<Repository<IOrder>>(getRepositoryToken(Order));
-    transactionRepository = module.get<Repository<ITransaction>>(
-      getRepositoryToken(OrderTransaction),
-    );
+    transactionRepository = module.get<Repository<ITransaction>>(getRepositoryToken(OrderTransaction));
     orderQueue = module.get<Queue>(getQueueToken('order'));
   });
 
@@ -99,9 +93,7 @@ describe('OrderService', () => {
       order: mockedOrder,
     };
 
-    const orderSaveSpy = jest
-      .spyOn(orderRepository, 'save')
-      .mockResolvedValue(mockedOrder);
+    const orderSaveSpy = jest.spyOn(orderRepository, 'save').mockResolvedValue(mockedOrder);
     const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
 
     const order = await service.create({ ...orderInput, user_id: userId });
@@ -130,9 +122,7 @@ describe('OrderService', () => {
       transactions: [],
     };
 
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(mockedOrder);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockedOrder);
     const orderSaveSpy = jest.spyOn(orderRepository, 'save');
 
     try {
@@ -142,10 +132,7 @@ describe('OrderService', () => {
         code: orderInput.order_code,
       });
       expect(e).toBeInstanceOf(BadRequestException);
-      expect(e).toHaveProperty(
-        'message',
-        commonMessage('en', 'DUPLICATE', 'order_code'),
-      );
+      expect(e).toHaveProperty('message', commonMessage('en', 'DUPLICATE', 'order_code'));
     }
 
     expect(orderSaveSpy).not.toHaveBeenCalled();
@@ -168,9 +155,7 @@ describe('OrderService', () => {
         } as ITransaction,
       ],
     };
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(mockedOrder);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockedOrder);
 
     const order = await service.get(orderId);
 
@@ -198,9 +183,7 @@ describe('OrderService', () => {
         } as ITransaction,
       ],
     };
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(mockedOrder);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockedOrder);
 
     const order = await service.get(code);
 
@@ -212,9 +195,7 @@ describe('OrderService', () => {
   });
 
   it('should return not found when Order is not exist', async () => {
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(null);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
     const orderId = 1;
 
     try {
@@ -247,9 +228,7 @@ describe('OrderService', () => {
         } as ITransaction,
       ],
     };
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(mockedOrder);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockedOrder);
     const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
 
     await service.updateState(orderId, EOrderState.cancelled);
@@ -265,9 +244,7 @@ describe('OrderService', () => {
   });
 
   it('should return error if updating state for non-exist Order', async () => {
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(null);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
     const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
     const orderId = 1;
 
@@ -302,19 +279,14 @@ describe('OrderService', () => {
         } as ITransaction,
       ],
     };
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(mockedOrder);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockedOrder);
     const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
 
     try {
       await service.updateState(orderId, EOrderState.cancelled);
     } catch (e) {
       expect(e).toBeInstanceOf(NotAcceptableException);
-      expect(e).toHaveProperty(
-        'message',
-        orderMessage('en', 'NOT_ALLOWED_TO_UPDATE_DELIVERED'),
-      );
+      expect(e).toHaveProperty('message', orderMessage('en', 'NOT_ALLOWED_TO_UPDATE_DELIVERED'));
     }
     expect(orderFindOneSpy).toHaveBeenCalledWith({
       where: { id: orderId },
@@ -340,9 +312,7 @@ describe('OrderService', () => {
         } as ITransaction,
       ],
     };
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(mockedOrder);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockedOrder);
     const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
     const orderQueueSpy = jest.spyOn(orderQueue, 'add');
 
@@ -350,10 +320,7 @@ describe('OrderService', () => {
       await service.updateState(orderId, EOrderState.confirmed);
     } catch (e) {
       expect(e).toBeInstanceOf(NotAcceptableException);
-      expect(e).toHaveProperty(
-        'message',
-        orderMessage('en', 'NOT_ALLOWED_TO_UPDATE_CANCELLED'),
-      );
+      expect(e).toHaveProperty('message', orderMessage('en', 'NOT_ALLOWED_TO_UPDATE_CANCELLED'));
     }
     expect(orderFindOneSpy).toHaveBeenCalledWith({
       where: { id: orderId },
@@ -379,9 +346,7 @@ describe('OrderService', () => {
       user_id: 1,
       transactions: [mockedState],
     };
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(mockedOrder);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockedOrder);
 
     const state = await service.checkState(orderId);
 
@@ -397,9 +362,7 @@ describe('OrderService', () => {
 
   it('should return error if checking state of a non-exist Order', async () => {
     const orderId = 1;
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(null);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
 
     try {
       await service.checkState(orderId);
@@ -431,9 +394,7 @@ describe('OrderService', () => {
         } as ITransaction,
       ],
     };
-    const orderFindOneSpy = jest
-      .spyOn(orderRepository, 'findOne')
-      .mockResolvedValue(mockedOrder);
+    const orderFindOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockedOrder);
     const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
     const addQueueSpy = jest.spyOn(orderQueue, 'add');
 

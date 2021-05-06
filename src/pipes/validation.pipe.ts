@@ -1,9 +1,4 @@
-import {
-  ArgumentMetadata,
-  BadRequestException,
-  Injectable,
-  PipeTransform,
-} from '@nestjs/common';
+import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { Validator } from 'validator-module';
 import { ObjectSchema } from 'joi';
 
@@ -11,10 +6,7 @@ import { validateMessage } from '../utils/localeUtils';
 
 @Injectable()
 export class JoiValidationPipe implements PipeTransform {
-  constructor(
-    private schema: ObjectSchema,
-    private indicator: 'params' | 'query' | 'body',
-  ) {}
+  constructor(private schema: ObjectSchema, private indicator: 'params' | 'query' | 'body') {}
 
   transform(value: any, metadata: ArgumentMetadata): any {
     if (metadata.type !== this.indicator) {

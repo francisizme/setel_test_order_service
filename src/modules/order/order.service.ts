@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotAcceptableException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotAcceptableException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
@@ -33,9 +27,7 @@ export class OrderService {
       code: input.order_code,
     });
     if (order) {
-      throw new BadRequestException(
-        commonMessage('en', 'DUPLICATE', 'order_code'),
-      );
+      throw new BadRequestException(commonMessage('en', 'DUPLICATE', 'order_code'));
     }
 
     const createdOrder = await this.orderRepository.save({
@@ -72,14 +64,10 @@ export class OrderService {
       throw new NotFoundException(orderMessage('en', 'NOT_FOUND'));
     }
     if (this._isValidState(order, EOrderState.delivered)) {
-      throw new NotAcceptableException(
-        orderMessage('en', 'NOT_ALLOWED_TO_UPDATE_DELIVERED'),
-      );
+      throw new NotAcceptableException(orderMessage('en', 'NOT_ALLOWED_TO_UPDATE_DELIVERED'));
     }
     if (this._isValidState(order, EOrderState.cancelled)) {
-      throw new NotAcceptableException(
-        orderMessage('en', 'NOT_ALLOWED_TO_UPDATE_CANCELLED'),
-      );
+      throw new NotAcceptableException(orderMessage('en', 'NOT_ALLOWED_TO_UPDATE_CANCELLED'));
     }
 
     await this.transactionRepository.save({ order, state });
@@ -108,9 +96,7 @@ export class OrderService {
     const states = order.transactions;
     const lastState = states[states.length - 1];
     if (lastState.state !== EOrderState.confirmed) {
-      Logger.error(
-        '[OrderService.deliverOrder]: Cannot deliver a non-confirmed Order',
-      );
+      Logger.error('[OrderService.deliverOrder]: Cannot deliver a non-confirmed Order');
     } else {
       await this.transactionRepository.save({
         order,

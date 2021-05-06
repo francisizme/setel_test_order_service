@@ -37,17 +37,18 @@ class OrderQueueFake {
 }
 
 describe('OrderService', () => {
+  i18n.configure({
+    locales: ['en'],
+    directory: path.join(__dirname, '../../config/locales'),
+    objectNotation: true,
+  });
   let service: OrderService;
   let orderRepository: Repository<IOrder>;
   let transactionRepository: Repository<ITransaction>;
   let orderQueue: Queue;
+  const userId = 1;
 
   beforeEach(async () => {
-    i18n.configure({
-      locales: ['en'],
-      directory: path.join(__dirname, '../../config/locales'),
-      objectNotation: true,
-    });
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrderService,
@@ -82,14 +83,9 @@ describe('OrderService', () => {
     const code = faker.git.shortSha().toUpperCase();
     const d = new Date();
     const orderInput: IOrderCreate = {
-      order: {
-        code,
-        user_id: 1,
-      },
-      payment: {
-        payment_type: EPaymentType.cash,
-      },
-    };
+      order_code: code,
+      payment_type: EPaymentType.cash,
+    } as IOrderCreate;
     const mockedOrder: IOrder = {
       id: 1,
       code,
@@ -108,9 +104,12 @@ describe('OrderService', () => {
       .mockResolvedValue(mockedOrder);
     const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
 
-    const order = await service.create(orderInput);
+    const order = await service.create({ ...orderInput, user_id: userId });
 
-    expect(orderSaveSpy).toHaveBeenCalledWith(orderInput.order);
+    expect(orderSaveSpy).toHaveBeenCalledWith({
+      code: orderInput.order_code,
+      user_id: userId,
+    });
     expect(transactionSaveSpy).toHaveBeenCalledWith(transactionInput);
     expect(order).toBe(mockedOrder);
   });
@@ -119,14 +118,9 @@ describe('OrderService', () => {
     const code = faker.git.shortSha().toUpperCase();
     const d = new Date();
     const orderInput: IOrderCreate = {
-      order: {
-        code,
-        user_id: 1,
-      },
-      payment: {
-        payment_type: EPaymentType.cash,
-      },
-    };
+      order_code: code,
+      payment_type: EPaymentType.cash,
+    } as IOrderCreate;
     const mockedOrder: IOrder = {
       id: 1,
       code,
@@ -142,15 +136,15 @@ describe('OrderService', () => {
     const orderSaveSpy = jest.spyOn(orderRepository, 'save');
 
     try {
-      await service.create(orderInput);
+      await service.create({ ...orderInput, user_id: userId });
     } catch (e) {
       expect(orderFindOneSpy).toHaveBeenCalledWith({
-        code: orderInput.order.code,
+        code: orderInput.order_code,
       });
       expect(e).toBeInstanceOf(BadRequestException);
       expect(e).toHaveProperty(
         'message',
-        commonMessage('en', 'DUPLICATE', 'code'),
+        commonMessage('en', 'DUPLICATE', 'order_code'),
       );
     }
 

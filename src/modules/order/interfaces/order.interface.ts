@@ -4,11 +4,7 @@ import { EPaymentType } from '../../../utils/enum';
 export type IOrder = Order;
 
 export interface IOrderCreate {
-  order: {
-    code: string;
-    user_id: number;
-  };
-  payment: {
-    payment_type: EPaymentType;
-  };
+  order_code: string;
+  user_token: string;
+  payment_type: EPaymentType;
 }

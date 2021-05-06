@@ -28,15 +28,20 @@ export class OrderService {
     @InjectQueue('order') private readonly orderQueue: Queue,
   ) {}
 
-  async create(input: IOrderCreate): Promise<IOrder> {
+  async create(input: IOrderCreate & { user_id: number }): Promise<IOrder> {
     const order = await this.orderRepository.findOne({
-      code: input.order.code,
+      code: input.order_code,
     });
     if (order) {
-      throw new BadRequestException(commonMessage('en', 'DUPLICATE', 'code'));
+      throw new BadRequestException(
+        commonMessage('en', 'DUPLICATE', 'order_code'),
+      );
     }
 
-    const createdOrder = await this.orderRepository.save(input.order);
+    const createdOrder = await this.orderRepository.save({
+      code: input.order_code,
+      user_id: input.user_id,
+    });
     await this.transactionRepository.save({
       order: createdOrder,
       state: EOrderState.created,

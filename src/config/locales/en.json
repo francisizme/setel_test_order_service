@@ -23,6 +23,7 @@
   "ORDER": {
     "NOT_FOUND": "Order not found!",
     "NOT_ALLOWED_TO_UPDATE_DELIVERED": "Cannot update a delivered Order!",
-    "NOT_ALLOWED_TO_UPDATE_CANCELLED": "Cannot update a canceled Order!"
+    "NOT_ALLOWED_TO_UPDATE_CANCELLED": "Cannot update a canceled Order!",
+    "INVALID_TOKEN": "Invalid user token!"
   }
 }

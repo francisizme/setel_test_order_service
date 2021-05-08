@@ -92,11 +92,12 @@ export class OrderService {
     return { ...state, state_text: EOrderState[state.state] };
   }
 
-  async deliverOrder(order: IOrder): Promise<void> {
+  async deliverOrder(orderId: number): Promise<void> {
+    const order = await this.orderRepository.findOne({ where: { id: orderId }, relations: ['transactions'] });
     const states = order.transactions;
     const lastState = states[states.length - 1];
     if (lastState.state !== EOrderState.confirmed) {
-      Logger.error('[OrderService.deliverOrder]: Cannot deliver a non-confirmed Order');
+      Logger.error('Cannot deliver a non-confirmed Order', null, OrderService.name + '.' + this.deliverOrder.name);
     } else {
       await this.transactionRepository.save({
         order,
@@ -114,7 +115,7 @@ export class OrderService {
   }
 
   private async _addQueueToDeliver(order: IOrder): Promise<void> {
-    await this.orderQueue.add(order, { delay: 5000 });
+    await this.orderQueue.add(order.id, { delay: 5000 });
   }
   //endregion
 }

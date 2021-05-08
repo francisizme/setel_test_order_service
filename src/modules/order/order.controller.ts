@@ -1,5 +1,5 @@
-import { BadRequestException, Body, Controller, Get, Inject, Param, Post, Put, UsePipes } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { BadRequestException, Body, Controller, Get, Inject, Param, Post, UsePipes } from '@nestjs/common';
+import { ClientProxy, MessagePattern, Payload } from '@nestjs/microservices';
 
 import { OrderService } from './order.service';
 import { OrderCreateSchema } from './order.schema';
@@ -17,8 +17,8 @@ import { orderMessage } from '../../utils/localeUtils';
 export class OrderController {
   constructor(
     private readonly orderService: OrderService,
-    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
-    @Inject('PAYMENT_SERVICE') private readonly paymentClient: ClientProxy,
+    @Inject('AUTH_CLIENT') private readonly authClient: ClientProxy,
+    @Inject('PAYMENT_CLIENT') private readonly paymentClient: ClientProxy,
   ) {}
 
   @Get(':orderId([0-9]+)')
@@ -40,30 +40,26 @@ export class OrderController {
       user_id: user.id,
     });
 
-    await this._performPayment(order, input);
+    this._performPayment(order, input);
 
     return order;
   }
 
-  @Put('cancel/:orderId([0-9]+)')
-  async cancel(@Param('orderId') orderId: number): Promise<void> {
+  @MessagePattern('cancel')
+  async cancel(@Payload() orderId: number): Promise<void> {
     return this.orderService.updateState(orderId, EOrderState.cancelled);
   }
 
-  @Put('confirm/:orderId([0-9]+)')
-  async confirm(@Param('orderId') orderId: number): Promise<void> {
+  @MessagePattern('confirm')
+  async confirm(@Payload() orderId: number): Promise<void> {
     return this.orderService.updateState(orderId, EOrderState.confirmed);
   }
 
-  private async _performPayment(order: IOrder, orderCreateInfo: IOrderCreate): Promise<void> {
-    const isPaid = await this.paymentClient
-      .send('pay', {
-        order_id: order.id,
-        user_token: orderCreateInfo.user_token,
-        payment_type: orderCreateInfo.payment_type,
-      })
-      .toPromise();
-
-    await this.orderService.updateState(order.id, isPaid ? EOrderState.confirmed : EOrderState.cancelled);
+  private _performPayment(order: IOrder, orderCreateInfo: IOrderCreate): void {
+    this.paymentClient.emit('pay', {
+      order_id: order.id,
+      user_token: orderCreateInfo.user_token,
+      payment_type: orderCreateInfo.payment_type,
+    });
   }
 }

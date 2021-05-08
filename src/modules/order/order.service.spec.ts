@@ -16,7 +16,7 @@ import { OrderTransaction } from './entities/transaction.entity';
 import { IOrder, IOrderCreate } from './interfaces/order.interface';
 import { ITransaction } from './interfaces/transaction.interface';
 
-import { EOrderState, EPaymentType } from '../../utils/enum';
+import { EOrderState } from '../../utils/enum';
 import { commonMessage, orderMessage } from '../../utils/localeUtils';
 
 class OrderTransactionRepositoryFake {
@@ -43,6 +43,7 @@ describe('OrderService', () => {
   let transactionRepository: Repository<ITransaction>;
   let orderQueue: Queue;
   const userId = 1;
+  const d = new Date();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -75,10 +76,9 @@ describe('OrderService', () => {
 
   it('should create an Order', async () => {
     const code = faker.git.shortSha().toUpperCase();
-    const d = new Date();
     const orderInput: IOrderCreate = {
       order_code: code,
-      payment_type: EPaymentType.cash,
+      payment_type: 1,
     } as IOrderCreate;
     const mockedOrder: IOrder = {
       id: 1,
@@ -108,10 +108,9 @@ describe('OrderService', () => {
 
   it('should return error if Order code is duplicate', async () => {
     const code = faker.git.shortSha().toUpperCase();
-    const d = new Date();
     const orderInput: IOrderCreate = {
       order_code: code,
-      payment_type: EPaymentType.cash,
+      payment_type: 1,
     } as IOrderCreate;
     const mockedOrder: IOrder = {
       id: 1,
@@ -139,7 +138,6 @@ describe('OrderService', () => {
   });
 
   it('should return an Order by order ID', async () => {
-    const d = new Date();
     const orderId = 1;
     const mockedOrder: IOrder = {
       id: 1,
@@ -167,7 +165,6 @@ describe('OrderService', () => {
   });
 
   it('should return an Order by order code', async () => {
-    const d = new Date();
     const code = faker.git.shortSha();
     const mockedOrder: IOrder = {
       id: 1,
@@ -213,7 +210,6 @@ describe('OrderService', () => {
 
   it('should update state of an Order', async () => {
     const orderId = 1;
-    const d = new Date();
     const mockedOrder: IOrder = {
       id: orderId,
       code: faker.git.shortSha(),
@@ -264,7 +260,6 @@ describe('OrderService', () => {
 
   it('should return error if updating a delivered Order', async () => {
     const orderId = 1;
-    const d = new Date();
     const mockedOrder: IOrder = {
       id: orderId,
       code: faker.git.shortSha(),
@@ -297,7 +292,6 @@ describe('OrderService', () => {
 
   it('should return error if updating a cancelled Order', async () => {
     const orderId = 1;
-    const d = new Date();
     const mockedOrder: IOrder = {
       id: orderId,
       code: faker.git.shortSha(),
@@ -332,7 +326,6 @@ describe('OrderService', () => {
 
   it('should check state of an Order', async () => {
     const orderId = 1;
-    const d = new Date();
     const mockedState: ITransaction = {
       id: 1,
       state: EOrderState.cancelled,
@@ -379,7 +372,6 @@ describe('OrderService', () => {
 
   it('should deliver the Order after a certain of seconds', async () => {
     const orderId = 1;
-    const d = new Date();
     const mockedOrder: IOrder = {
       id: orderId,
       code: faker.git.shortSha(),
@@ -408,6 +400,61 @@ describe('OrderService', () => {
       order: mockedOrder,
       state: EOrderState.confirmed,
     });
-    expect(addQueueSpy).toHaveBeenCalledWith(mockedOrder, { delay: 5000 });
+    expect(addQueueSpy).toHaveBeenCalledWith(mockedOrder.id, { delay: 5000 });
+  });
+
+  it('should update state of the Order to deliver', async () => {
+    const orderId = 1;
+    const mockedOrder: IOrder = {
+      id: orderId,
+      code: faker.git.shortSha(),
+      user_id: 1,
+      created_at: d,
+      updated_at: d,
+      transactions: [
+        {
+          id: 1,
+          state: EOrderState.created,
+          created_at: d,
+        } as ITransaction,
+        {
+          id: 1,
+          state: EOrderState.confirmed,
+          created_at: d,
+        } as ITransaction,
+      ],
+    };
+    const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
+    const findOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockedOrder);
+
+    await service.deliverOrder(orderId);
+
+    expect(findOneSpy).toHaveBeenCalledWith({ where: { id: orderId }, relations: ['transactions'] });
+    expect(transactionSaveSpy).toHaveBeenCalledWith({ order: mockedOrder, state: EOrderState.delivered });
+  });
+
+  it('should do nothing if state of the Order is not confirm', async () => {
+    const orderId = 1;
+    const mockedOrder: IOrder = {
+      id: orderId,
+      code: faker.git.shortSha(),
+      user_id: 1,
+      created_at: d,
+      updated_at: d,
+      transactions: [
+        {
+          id: 1,
+          state: EOrderState.created,
+          created_at: d,
+        } as ITransaction,
+      ],
+    };
+    const transactionSaveSpy = jest.spyOn(transactionRepository, 'save');
+    const findOneSpy = jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockedOrder);
+
+    await service.deliverOrder(orderId);
+
+    expect(findOneSpy).toHaveBeenCalledWith({ where: { id: orderId }, relations: ['transactions'] });
+    expect(transactionSaveSpy).not.toHaveBeenCalled();
   });
 });

@@ -13,7 +13,7 @@ import { IOrder, IOrderCreate } from './interfaces/order.interface';
 import { IUser } from './interfaces/user.interface';
 import { ITransactionDetails } from './interfaces/transaction.interface';
 
-import { EOrderState, EPaymentType } from '../../utils/enum';
+import { EOrderState } from '../../utils/enum';
 import { orderMessage } from '../../utils/localeUtils';
 
 class OrderServiceFake {
@@ -31,7 +31,7 @@ class AuthClientFake {
 }
 
 class PaymentClientFake {
-  send() {}
+  emit() {}
 }
 
 describe('OrderController', () => {
@@ -45,7 +45,6 @@ describe('OrderController', () => {
   let authClient: ClientProxy;
   let paymentClient: ClientProxy;
   let authObserver: Observable<any>;
-  let paymentObserver: Observable<any>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -56,11 +55,11 @@ describe('OrderController', () => {
           useClass: OrderServiceFake,
         },
         {
-          provide: 'AUTH_SERVICE',
+          provide: 'AUTH_CLIENT',
           useClass: AuthClientFake,
         },
         {
-          provide: 'PAYMENT_SERVICE',
+          provide: 'PAYMENT_CLIENT',
           useClass: PaymentClientFake,
         },
       ],
@@ -68,22 +67,21 @@ describe('OrderController', () => {
 
     controller = module.get<OrderController>(OrderController);
     service = module.get<OrderService>(OrderService);
-    authClient = module.get<ClientProxy>('AUTH_SERVICE');
-    paymentClient = module.get<ClientProxy>('PAYMENT_SERVICE');
+    authClient = module.get<ClientProxy>('AUTH_CLIENT');
+    paymentClient = module.get<ClientProxy>('PAYMENT_CLIENT');
     authObserver = new ObserverFake();
-    paymentObserver = new ObserverFake();
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should create a paid Order', async () => {
+  it('should create an Order', async () => {
     const code = faker.git.shortSha();
     const d = new Date();
     const input: IOrderCreate = {
       order_code: code,
-      payment_type: EPaymentType.cash,
+      payment_type: 1,
       user_token: faker.git.shortSha(),
     };
     const mockedOrder: IOrder = {
@@ -103,9 +101,7 @@ describe('OrderController', () => {
     };
     const authClientSendSpy = jest.spyOn(authClient, 'send').mockReturnValue(authObserver);
     const authClientPromiseSpy = jest.spyOn(authObserver, 'toPromise').mockResolvedValue(mockedUser);
-    const paymentClientSendSpy = jest.spyOn(paymentClient, 'send').mockReturnValue(paymentObserver);
-    const paymentClientPromiseSpy = jest.spyOn(paymentObserver, 'toPromise').mockResolvedValue(true);
-    const updateStateSpy = jest.spyOn(service, 'updateState');
+    const paymentClientSendSpy = jest.spyOn(paymentClient, 'emit');
     const serviceCreateSpy = jest.spyOn(service, 'create').mockResolvedValue(mockedOrder);
 
     const order = await controller.create(input);
@@ -121,56 +117,6 @@ describe('OrderController', () => {
       user_token: input.user_token,
       payment_type: input.payment_type,
     });
-    expect(paymentClientPromiseSpy).toHaveBeenCalled();
-    expect(updateStateSpy).toHaveBeenCalledWith(mockedOrder.id, EOrderState.confirmed);
-    expect(order).toBe(mockedOrder);
-  });
-
-  it('should create an unpaid Order', async () => {
-    const code = faker.git.shortSha();
-    const d = new Date();
-    const input: IOrderCreate = {
-      order_code: code,
-      payment_type: EPaymentType.cash,
-      user_token: faker.git.shortSha(),
-    };
-    const mockedOrder: IOrder = {
-      id: 1,
-      code,
-      user_id: 1,
-      created_at: d,
-      updated_at: d,
-      transactions: [],
-    };
-    const mockedUser: IUser = {
-      id: 1,
-      full_name: faker.name.firstName(),
-      username: faker.internet.userName(),
-      created_at: d,
-      updated_at: d,
-    };
-    const authClientSendSpy = jest.spyOn(authClient, 'send').mockReturnValue(authObserver);
-    const authClientPromiseSpy = jest.spyOn(authObserver, 'toPromise').mockResolvedValue(mockedUser);
-    const paymentClientSendSpy = jest.spyOn(paymentClient, 'send').mockReturnValue(paymentObserver);
-    const paymentClientPromiseSpy = jest.spyOn(paymentObserver, 'toPromise').mockResolvedValue(false);
-    const updateStateSpy = jest.spyOn(service, 'updateState');
-    const serviceCreateSpy = jest.spyOn(service, 'create').mockResolvedValue(mockedOrder);
-
-    const order = await controller.create(input);
-
-    expect(authClientSendSpy).toHaveBeenCalledWith('verifyToken', input.user_token);
-    expect(authClientPromiseSpy).toHaveBeenCalled();
-    expect(serviceCreateSpy).toHaveBeenCalledWith({
-      ...input,
-      user_id: mockedUser.id,
-    });
-    expect(paymentClientSendSpy).toHaveBeenCalledWith('pay', {
-      order_id: mockedOrder.id,
-      user_token: input.user_token,
-      payment_type: input.payment_type,
-    });
-    expect(paymentClientPromiseSpy).toHaveBeenCalled();
-    expect(updateStateSpy).toHaveBeenCalledWith(mockedOrder.id, EOrderState.cancelled);
     expect(order).toBe(mockedOrder);
   });
 
@@ -178,13 +124,12 @@ describe('OrderController', () => {
     const code = faker.git.shortSha();
     const input: IOrderCreate = {
       order_code: code,
-      payment_type: EPaymentType.cash,
+      payment_type: 1,
       user_token: faker.git.shortSha(),
     };
     const authClientSendSpy = jest.spyOn(authClient, 'send').mockReturnValue(authObserver);
     const authClientPromiseSpy = jest.spyOn(authObserver, 'toPromise').mockResolvedValue(null);
-    const paymentClientSendSpy = jest.spyOn(paymentClient, 'send').mockReturnValue(paymentObserver);
-    const paymentClientPromiseSpy = jest.spyOn(paymentObserver, 'toPromise');
+    const paymentClientSendSpy = jest.spyOn(paymentClient, 'emit');
     const serviceCreateSpy = jest.spyOn(service, 'create');
 
     try {
@@ -196,7 +141,6 @@ describe('OrderController', () => {
 
     expect(authClientSendSpy).toHaveBeenCalledWith('verifyToken', input.user_token);
     expect(authClientPromiseSpy).toHaveBeenCalled();
-    expect(paymentClientPromiseSpy).not.toHaveBeenCalled();
     expect(paymentClientSendSpy).not.toHaveBeenCalled();
     expect(serviceCreateSpy).not.toHaveBeenCalled();
   });

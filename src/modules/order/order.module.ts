@@ -19,7 +19,7 @@ import { OrderProcessor } from '../../queues/order.processor';
     }),
     ClientsModule.register([
       {
-        name: 'AUTH_SERVICE',
+        name: 'AUTH_CLIENT',
         transport: Transport.RMQ,
         options: {
           urls: ['amqp://localhost:5672'],
@@ -32,7 +32,7 @@ import { OrderProcessor } from '../../queues/order.processor';
     ]),
     ClientsModule.register([
       {
-        name: 'PAYMENT_SERVICE',
+        name: 'PAYMENT_CLIENT',
         transport: Transport.RMQ,
         options: {
           urls: ['amqp://localhost:5672'],
@@ -42,7 +42,7 @@ import { OrderProcessor } from '../../queues/order.processor';
           },
         },
       },
-    ]),
+    ])
   ],
   controllers: [OrderController],
   providers: [OrderService, OrderProcessor],

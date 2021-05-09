@@ -7,13 +7,15 @@ import { AppService } from './app.service';
 
 import { OrderModule } from './modules/order/order.module';
 
+import config from './config';
+
 @Module({
   imports: [
     TypeOrmModule.forRoot(),
     BullModule.forRoot({
       redis: {
-        host: 'localhost',
-        port: 6379,
+        host: config.redis.host,
+        port: config.redis.port,
       },
     }),
     OrderModule,

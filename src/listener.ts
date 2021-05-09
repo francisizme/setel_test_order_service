@@ -19,7 +19,7 @@ async function bootstrap() {
   });
 
   app.listen(() => {
-    console.log('Listening the Authentication Service on port', port);
+    console.log('Listening the Order Service on port', port);
   });
 }
 

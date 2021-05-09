@@ -41,7 +41,7 @@
     "rimraf": "^3.0.2",
     "rxjs": "^6.6.6",
     "typeorm": "^0.2.32",
-    "validator-module": "github:tanhp1506/joi-validation-module#simply"
+    "validator-module": "npm:joi-validator-module@^1.0.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^7.6.0",

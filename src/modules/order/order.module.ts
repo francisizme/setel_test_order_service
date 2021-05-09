@@ -11,6 +11,8 @@ import { OrderTransactionRepository } from './repositories/transaction.repositor
 
 import { OrderProcessor } from '../../queues/order.processor';
 
+import config from '../../config';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([OrderRepository, OrderTransactionRepository]),
@@ -22,8 +24,8 @@ import { OrderProcessor } from '../../queues/order.processor';
         name: 'AUTH_CLIENT',
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://localhost:5672'],
-          queue: 'auth_queue',
+          urls: [config.amqp.url],
+          queue: config.amqp.auth_queue,
           queueOptions: {
             durable: false,
           },
@@ -35,8 +37,8 @@ import { OrderProcessor } from '../../queues/order.processor';
         name: 'PAYMENT_CLIENT',
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://localhost:5672'],
-          queue: 'payment_queue',
+          urls: [config.amqp.url],
+          queue: config.amqp.payment_queue,
           queueOptions: {
             durable: false,
           },

@@ -43,6 +43,8 @@ export default {
 
   amqp: {
     url: process.env.AMQP_URL,
-    queue: process.env.AMQP_QUEUE,
+    auth_queue: process.env.AMQP_AUTH_QUEUE,
+    order_queue: process.env.AMQP_ORDER_QUEUE,
+    payment_queue: process.env.AMQP_PAYMENT_QUEUE,
   },
 };

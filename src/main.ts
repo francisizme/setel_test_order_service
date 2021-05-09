@@ -1,7 +1,10 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import * as path from 'path';
 import * as i18n from 'i18n';
+
+import { AppModule } from './app.module';
+
+import config from './config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,6 +16,6 @@ async function bootstrap() {
     objectNotation: true,
   });
 
-  await app.listen(3001);
+  await app.listen(config.port);
 }
 bootstrap();

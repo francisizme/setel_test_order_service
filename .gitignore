@@ -36,3 +36,7 @@ lerna-debug.log*
 # Lock
 *-lock.json
 *.lock
+
+# Env
+.env*
+!.env.*.example
